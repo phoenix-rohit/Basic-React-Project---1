@@ -1,17 +1,43 @@
 import { useState } from "react";
 
-const initialItems = [
-  { id: 1, description: "Passports", quantity: 2, packed: false },
-  { id: 2, description: "Socks", quantity: 12, packed: false },
-  { id: 3, description: "Charger", quantity: 1, packed: true },
-];
+// const initialItems = [
+//   { id: 1, description: "Passports", quantity: 2, packed: false },
+//   { id: 2, description: "Socks", quantity: 12, packed: false },
+//   { id: 3, description: "Charger", quantity: 1, packed: true },
+// ];
 
 export default function App() {
+  // Here is the lifted state
+  const [items, setItems] = useState([]);
+
+  function handleItems(item) {
+    // here we didnt push the element because in react we cant mutate state or props therefore we created a new array and added the new element at the end
+    setItems((items) => [...items, item]);
+  }
+
+  function handleDeleteItems(id) {
+    setItems((items) => items.filter((item) => item.id !== id));
+  }
+
+  function handleToggleItem(id) {
+    setItems((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, packed: !item.packed } : item
+      )
+    );
+  }
+
   return (
     <div className="app">
       <Logo />
-      <Form />
-      <PackingList />
+      {/* here we passed the function we is responsible to update the state via props because Form Component is responsible for creating new item */}
+      <Form onAddingItems={handleItems} />
+      {/* PackingList component needed item data so that it can render the list. This is the main reason we Lifted the state  */}
+      <PackingList
+        items={items}
+        onDeleteItems={handleDeleteItems}
+        onToggleItems={handleToggleItem}
+      />
       <Stats />
     </div>
   );
@@ -21,7 +47,7 @@ function Logo() {
   return <h1>🌴 Far Away 💼</h1>;
 }
 
-function Form() {
+function Form({ onAddingItems }) {
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState(1);
 
@@ -37,7 +63,8 @@ function Form() {
       packed: false,
       id: Date.now(),
     };
-    console.log(newItem);
+
+    onAddingItems(newItem);
 
     // Setting to default values again
     setDescription("");
@@ -74,28 +101,39 @@ function Form() {
   );
 }
 
-function PackingList() {
+function PackingList({ items, onDeleteItems, onToggleItems }) {
   return (
     <div className="list">
       <ul style={{ overflow: "hidden" }}>
-        {initialItems.map((item, idx, arr) => {
-          return <Item itemInfo={item} key={item.id} />;
+        {items.map((item, idx, arr) => {
+          return (
+            <Item
+              itemInfo={item}
+              key={item.id}
+              onDeleteItems={onDeleteItems}
+              onToggleItems={onToggleItems}
+            />
+          );
         })}
       </ul>
     </div>
   );
 }
 
-function Item({ itemInfo }) {
-  // FIXME Add toggle
-
+function Item({ itemInfo, onDeleteItems, onToggleItems }) {
   return (
     <li>
-      <button>{/* <input type="checkbox" /> */}</button>
+      <input
+        type="checkbox"
+        value={itemInfo.packed}
+        onChange={() => {
+          onToggleItems(itemInfo.id);
+        }}
+      />
       <span style={itemInfo.packed ? { textDecoration: "line-through" } : {}}>
         {itemInfo.quantity} {itemInfo.description}
       </span>
-      <button>❌</button>
+      <button onClick={() => onDeleteItems(itemInfo.id)}>❌</button>
     </li>
   );
 }
